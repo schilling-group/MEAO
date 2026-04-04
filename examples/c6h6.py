@@ -7,10 +7,9 @@ from pyscf.lo import orth
 from functools import reduce
 from pyblock2._pyscf.ao2mo import integrals as itg
 from pyblock2.driver.core import DMRGDriver, SymmetryTypes
-from tools import *
-from meao import MEAO   
+from ..tools import *
+from ..meao import MEAO   
 
-# Ref 1966Herzberg	Herzberg, G., Electronic spectra and electronic structure of polyatomic molecules,Van Nostrand,New York, 1966
 rcc = 1.3970 
 rch = 1.0840
 

@@ -57,10 +57,10 @@ class MEAO:
     def get_bonds(self, threshold=0.1):
         if self.dm1_meao is None:
             raise ValueError("Please run the meao() method first to compute the MEAO orbitals and density matrix.")
-        clusters, largest_cluster = get_cluster_index(self.dm1_meao, threshold)
-        self.bonds = clusters
+        bonds, largest_cluster = get_cluster_index(self.dm1_meao, threshold)
+        self.bonds = bonds
         self.mcb = largest_cluster
-        return clusters
+        return bonds
     
     def meao_mcb(self,mcb=None):
         if mcb is None:

@@ -10,12 +10,12 @@ from ..tools import *
 from ..meao import MEAO
 
 # Build the molecule of interest
-mol = gto.M(atom='N 0 0 0; N 0 0 1.094',
+mol = gto.M(atom='N 0 0 0; N 0 0 1.098',
     spin=0, verbose=0,basis='ccpvdz',unit='A',
     max_memory=1000,symmetry = False) # mem in MB
 
 # Build the reference MINAO molecule
-pmol = gto.M(atom='N 0 0 0; N 0 0 1.094',
+pmol = gto.M(atom='N 0 0 0; N 0 0 1.098',
     spin=0, verbose=0,basis='minao',unit='A',
     max_memory=1000,symmetry = False) # mem in MB
 

@@ -1,0 +1,8 @@
+# Python version: 3.11+
+# Generated with: pip freeze
+
+h5py==3.16.0
+networkx==3.6.1
+numpy==2.4.4
+pyscf==2.12.1
+scipy==1.17.1

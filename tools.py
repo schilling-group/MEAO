@@ -1,9 +1,6 @@
-import os,math
+import os,sys,copy,math
 import numpy as np
 from math import ceil, floor
-#from pyblock2._pyscf.ao2mo import integrals as itg
-#from pyblock2.driver.core import DMRGDriver, SymmetryTypes
-#from scipy.optimize import minimize
 from scipy.linalg import expm
 from itertools import combinations
 
@@ -15,7 +12,11 @@ def one_orb_rdm(ket,driver,i):
     op.add_term("CD", [i,i], 1)
     n_mpo = driver.get_mpo(op.finalize(), iprint=0)
     nu = np.real(driver.expectation(ket, n_mpo, ket))
-    nd = nu
+    
+    op = driver.expr_builder()
+    op.add_term("cd", [i,i], 1)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nd = np.real(driver.expectation(ket, n_mpo, ket))
 
     op = driver.expr_builder()
     op.add_term("CDcd", [i,i,i,i], 1)
@@ -28,6 +29,21 @@ def one_orb_rdm(ket,driver,i):
     rho[3,3] = nn
 
     return rho
+
+def s1_mean_field(gamma):
+    s1 = np.zeros(gamma.shape[0])
+    for i in range(gamma.shape[0]):
+        spec = np.zeros(4)
+        spec[0] = 1 - gamma[i,i]/2 - gamma[i,i]/2 + gamma[i,i]*gamma[i,i]/4
+        spec[1] = gamma[i,i]/2 - gamma[i,i]*gamma[i,i]/4
+        spec[2] = gamma[i,i]/2 - gamma[i,i]*gamma[i,i]/4
+        spec[3] = gamma[i,i]*gamma[i,i]/4
+        s = 0
+        for p in spec:
+            if p > 1e-6:
+                s -= p * np.log(p)
+        s1[i] = s
+    return s1
 
 def two_orb_rdm(ket,driver,i,j):
     rho = np.zeros((16,16))
@@ -148,7 +164,7 @@ def two_orb_rdm(ket,driver,i,j):
 
     # 3 pt 
     op = driver.expr_builder()
-    op.add_term("CDcdcd", [i,j,i,i,j,j], 1)
+    op.add_term("DCcdcd", [i,j,i,i,j,j], 1)
     n_mpo = driver.get_mpo(op.finalize(), iprint=0)
     rho[7,13] = np.real(driver.expectation(ket, n_mpo, ket))
     rho[13,7] = rho[7,13]
@@ -156,6 +172,230 @@ def two_orb_rdm(ket,driver,i,j):
     rho[14,11] = rho[7,13]
 
     return rho
+
+
+def two_orb_rdm_no_sym(ket,driver,i,j):
+    rho = np.zeros((16,16))
+
+    print([i,j])
+
+    op = driver.expr_builder()
+    op.add_term("CD", [i,i], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nu_id = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("cd", [i,i], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nd_id = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("CDcd", [i,i,i,i], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nn_id = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("CD", [j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    id_nu = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("cd", [j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    id_nd = np.real(driver.expectation(ket, n_mpo, ket))
+    
+    op = driver.expr_builder()
+    op.add_term("CDcd", [j,j,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    id_nn = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("CDCD", [i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nu_nu = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("cdcd", [i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nd_nd = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("CDcd", [i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nu_nd = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("cdCD", [i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nd_nu = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("CDCDcd", [i,i,j,j,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nu_nn = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("cdCDcd", [i,i,j,j,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nd_nn = np.real(driver.expectation(ket, n_mpo, ket))
+
+
+    op = driver.expr_builder()
+    op.add_term("CDcdCD", [i,i,i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nn_nu = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("CDcdcd", [i,i,i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nn_nd = np.real(driver.expectation(ket, n_mpo, ket))
+
+    op = driver.expr_builder()
+    op.add_term("CDcdCDcd", [i,i,i,i,j,j,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    nn_nn = np.real(driver.expectation(ket, n_mpo, ket))
+    
+    n0_nu = id_nu-nu_nu-nd_nu+nn_nu
+    n0_nd = id_nd-nu_nd-nd_nd+nn_nd
+    n0_nn = id_nn-nu_nn-nd_nn+nn_nn
+    nu_n0 = nu_id-nu_nu-nu_nd+nu_nn
+    nd_n0 = nd_id-nd_nu-nd_nd+nd_nn
+    nn_n0 = nn_id-nn_nu-nn_nd+nn_nn
+    n0_n0 = (1 - id_nu - id_nd + id_nn) - (nu_id - nu_nu - nu_nd + nu_nn) - (nd_id - nd_nu - nd_nd + nd_nn) + (nn_id - nn_nu - nn_nd + nn_nn)
+
+    # 0 0 
+    rho[0,0] = n0_n0
+    # 0 u
+    rho[1,1] = n0_nu - n0_nn
+    # 0 d
+    rho[2,2] = n0_nd - n0_nn
+    # 0 2
+    rho[3,3] = n0_nn
+    # u 0
+    rho[4,4] = nu_n0 - nn_n0
+    # u u
+    rho[5,5] = nu_nu - nn_nu - nu_nn + nn_nn
+    # u d
+    rho[6,6] = nu_nd - nn_nd - nu_nn + nn_nn
+    # u 2
+    rho[7,7] = nu_nn - nn_nn
+    # d 0
+    rho[8,8] = nd_n0 - nn_n0
+    # d u
+    rho[9,9] = nd_nu - nn_nu - nd_nn + nn_nn
+    # d d
+    rho[10,10] = nd_nd - nn_nd - nd_nn + nn_nn
+    # d 2
+    rho[11,11] = nd_nn - nn_nn
+    # 2 0
+    rho[12,12] = nn_n0 
+    # 2 u
+    rho[13,13] = nn_nu - nn_nn
+    # 2 d
+    rho[14,14] = nn_nd - nn_nn
+    # 2 2
+    rho[15,15] = nn_nn
+
+    # 1 pt
+    # |0u><u0| = C_j * D_i * (1-cd)_i * (1-cd)_j
+    # |u0><0u| = C_i * D_j * (1-cd)_i * (1-cd)_j < this operator is used
+    op = driver.expr_builder()
+    op.add_term("CD", [i,j], 1.0)
+    op.add_term("CDcd", [i,j,i,i], -1.0)
+    op.add_term("CDcd", [i,j,j,j], -1.0)
+    op.add_term("CDcdcd", [i,j,i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[1,4] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[4,1] = rho[1,4]
+
+    # |0d><d0| = c_j * d_i * (1-CD)_i * (1-CD)_j
+    # |d0><0d| = c_i * d_j * (1-CD)_i * (1-CD)_j < this operator is used
+    op = driver.expr_builder()
+    op.add_term("cd", [i,j], 1.0)
+    op.add_term("cdCD", [i,j,i,i], -1.0)
+    op.add_term("cdCD", [i,j,j,j], -1.0)
+    op.add_term("cdCDCD", [i,j,i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[2,8] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[8,2] = rho[2,8]
+
+    # 2 pt # CD for spin up
+    # |02><ud| = C_j * D_i * (1-cd)_i * (cd)_j
+    # |ud><02| = C_i * D_j * (1-cd)_i * (cd)_j < this operator is used
+    op = driver.expr_builder()
+    op.add_term("CDcd", [i,j,j,j], 1.0)
+    op.add_term("CDcdcd", [i,j,i,i,j,j], -1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[3,6] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[6,3] = rho[3,6]
+
+    # |02><du| = - c_j * d_i * (1-CD)_i * CD_j
+    # |du><02| = - c_i * d_j * (1-CD)_i * CD_j < this operator is used
+    op = driver.expr_builder()
+    op.add_term("cdCD", [i,j,j,j], -1.0)
+    op.add_term("cdCDCD", [i,j,i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[3,9] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[9,3] = rho[3,9]
+
+    # |02><20| = C_j * c_j * d_i * D_i
+    # |20><02| = C_i * c_i * d_j * D_j < this operator is used
+    op = driver.expr_builder()
+    op.add_term("CcdD", [i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[3,12] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[12,3] = rho[3,12]
+
+    # |ud><du| = C_i * c_j * D_j * d_i
+    # |du><ud| = c_i * C_j * d_j * D_i < this operator is used
+    op = driver.expr_builder()
+    op.add_term("cCdD", [i,j,j,i], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[6,9] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[9,6] = rho[6,9]
+
+    # |ud><20| = c_j * d_i * (1-CD)_j * (CD)_i
+    # |20><ud| = c_i * d_j * (1-CD)_j * (CD)_i < this operator is used
+    op = driver.expr_builder()
+    op.add_term("cdCD", [i,j,i,i], 1.0)
+    op.add_term("cdCDCD", [i,j,i,i,j,j], -1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[6,12] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[12,6] = rho[6,12]
+
+    # |du><20| = - C_j * D_i * (1-cd)_j * (cd)_i
+    # |20><du| = - C_i * D_j * (1-cd)_j * (cd)_i < this operator is used
+    op = driver.expr_builder()
+    op.add_term("cdCD", [i,j,i,i], -1.0)
+    op.add_term("cdCDCD", [i,j,i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[9,12] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[12,9] = rho[9,12]
+
+    # 3 pt 
+    # |u2><2u| = d_i * c_j * (CD)_j * (CD)_i < this operator is used
+    # |2u><u2| = d_j * c_i * (CD)_j * (CD)_i 
+    op = driver.expr_builder()
+    op.add_term("dcCDCD", [i,j,i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[7,13] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[13,7] = rho[7,13]
+
+    # |d2><2d| = D_i * C_j * (cd)_j * (cd)_i < this operator is used
+    # |2d><d2| = D_j * C_i * (cd)_j * (cd)_i 
+    op = driver.expr_builder()
+    op.add_term("DCcdcd", [i,j,i,i,j,j], 1.0)
+    n_mpo = driver.get_mpo(op.finalize(), iprint=0)
+    rho[11,14] = np.real(driver.expectation(ket, n_mpo, ket))
+    rho[14,11] = rho[11,14]
+
+    return rho
+
+
+
+
+
+
 
 def one_orb_rdm_mean_field(gamma,i):
     gamma = np.kron(gamma/2,np.eye(2))
@@ -173,7 +413,9 @@ def two_orb_rdm_mean_field(gamma,i,j):
 
     rho = np.zeros((16,16))
 
+    # C_i D_i
     id_nu = gamma[2*j,2*j]
+    # C_i D_i C_j D_j
     nu_nu = gamma[2*i,2*i]*gamma[2*j,2*j] - gamma[2*i,2*j]*gamma[2*j,2*i]
     nd_nu = gamma[2*i+1,2*i+1]*gamma[2*j,2*j]
     nn_nu = gamma[2*i+1,2*i+1]*nu_nu
@@ -245,16 +487,17 @@ def two_orb_rdm_mean_field(gamma,i,j):
     
 
     # 3 pt 
-    rho[7,13] = gamma[2*i+1,2*j+1]*nu_nu
+    rho[7,13] = -gamma[2*i+1,2*j+1]*nu_nu
     rho[13,7] = rho[7,13]
-    rho[11,14] = gamma[2*i,2*j]*nd_nd
+    rho[11,14] = -gamma[2*i,2*j]*nd_nd
     rho[14,11] = rho[11,14]
     
 
     return rho
 
 def entropy(rho):
-    rho = (rho + rho.T)/2
+    #rho = (rho + rho.T)/2
+    
     w,v = np.linalg.eigh(rho)
     S = 0
     for i in range(len(w)):
@@ -412,7 +655,7 @@ def max_coh(dm1,orbs_atomic_index,norbs_in_atoms,orb_alive):
     for i in range(no):
         for j in range(i):
             if orb_alive[i]*orb_alive[j]==1 and orbs_atomic_index[i]==orbs_atomic_index[j]:
-                X[i,j] = x0[m]*2*math.pi/10
+                X[i,j] = x0[m,0]*2*math.pi/10
                 m += 1
     U0 = expm(X-X.T)
     dm10 = U0 @ dm1 @ U0.T
@@ -604,7 +847,7 @@ def max_coh_2rdm(dm2,orbs_atomic_index,norbs_in_atoms,orb_alive):
         for i in range(no):
             for j in range(i):
                 if orb_alive[i]*orb_alive[j]==1 and orbs_atomic_index[i]==orbs_atomic_index[j]:
-                    X[i,j] = x0[m]*2*math.pi/5
+                    X[i,j] = x0[m,0]*2*math.pi/5
                     m += 1
         U0 = expm(X-X.T)
         #dm10 = U0 @ dm1 @ U0.T
@@ -881,6 +1124,8 @@ def direct_MI(orb_rdms,n_sites):
         for i in range(len(w)):
             if w[i] > 0:
                 S += -w[i]*np.log(w[i])
+            else:
+                print('Warning: negative eigenvalue in entropy calculation:',w[i])
         return S
 
     MI = np.zeros((n_sites,n_sites))
@@ -914,7 +1159,7 @@ def write_2ordm_mean_field(file_name,gamma, indices):
 
     fd.close()
 
-def write_2ordm_mps(file_name, ket, driver, norb, reorder=None):
+def write_2ordm_mps(file_name, ket, driver, norb, reorder=None, usesym=True):
 
     os.system('rm '+file_name)
     
@@ -931,7 +1176,10 @@ def write_2ordm_mps(file_name, ket, driver, norb, reorder=None):
                 i_ = max([reorder[i],reorder[j]])
                 j_ = min([reorder[i],reorder[j]])
                 print(i,j)
-                ordm[:,:,i_,j_] = two_orb_rdm(ket,driver,i,j)
+                if usesym:
+                    ordm[:,:,i_,j_] = two_orb_rdm(ket,driver,i,j)
+                else:
+                    ordm[:,:,i_,j_] = two_orb_rdm_no_sym(ket,driver,i,j)
                 
         fd = open(file_name, 'x')
         for i in range(norb):
@@ -992,6 +1240,9 @@ def get_cluster_index(dm1, threshold):
             biggest_cluster = cluster
 
     return clusters, biggest_cluster
+    
+
+    
 
 
 
