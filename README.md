@@ -13,7 +13,7 @@ block2
 
 # Example Usage
 Run example files in the parent directory via
-```python -m MEAO.examples.n2'''
+```python -m MEAO.examples.n2```
 
 # Reference
 L. Ding, E. Matito, C. Schilling, arXiv preprint, arXiv:2501.15699, 2025
