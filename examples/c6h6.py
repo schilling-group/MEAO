@@ -70,7 +70,7 @@ ket = driver.get_random_mps(tag="GS", bond_dim=200, nroots=1)
 bond_dims = list(range(100,801,100))
 nstage = len(bond_dims)
 energy = driver.dmrg(mpo, ket, n_sweeps=nstage, bond_dims=bond_dims, noises=[1e-10]*nstage,
-    thrds=[1e-6]*nstage, iprint=1)
+    thrds=[1e-10]*nstage, iprint=1)
 
 # Compute mutual information between MEAOs
 odm1 = driver.get_orbital_entropies(ket, orb_type=1)

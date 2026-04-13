@@ -57,8 +57,9 @@ driver = DMRGDriver(scratch="./tmp", symm_type=SymmetryTypes.SZ, n_threads=4)
 driver.initialize_system(n_sites=10, n_elec=14, spin=0)
 mpo = driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=ecore, iprint=1)
 ket = driver.get_random_mps(tag="GS", bond_dim=200, nroots=1)
-energy = driver.dmrg(mpo, ket, n_sweeps=15, bond_dims=[200]*15, noises=[1e-5]*15,
-    thrds=[1e-8]*15, iprint=1)
+bond_dims = list(range(100,1001,100))
+energy = driver.dmrg(mpo, ket, n_sweeps=15, bond_dims=bond_dims, noises=[1e-10]*15,
+    thrds=[1e-10]*15, iprint=1)
 print('DMRG energy = %20.15f' % energy)
 
 # Compute mutual information between MEAOs
