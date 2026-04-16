@@ -4,6 +4,7 @@
 This is a package for covalent bonding analysis using maximally entangled atomic orbitals (MEAO), and orbital entanglement. We included two example molecules for both two-center bonding and multi-center bonding analysis.
 
 # Dependency
+We recommend using a virtual python environment with the following packages (see requirements.txt for version details):
 ```Python
 numpy
 scipy
