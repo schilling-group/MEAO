@@ -12,8 +12,14 @@ pyscf
 block2
 ```
 
+# Installation
+MEAO can be installed with pip, which also installs the packages above:
+```
+pip install "MEAO @ git+https://github.com/schilling-group/MEAO"
+```
+
 # Example Usage
-Run example files in the parent directory via
+Run example files in the parent directory (or from any directory, if MEAO is installed) via
 ```python -m MEAO.examples.n2```. These scripts should only takes a few seconds to execute. In the output one can see the optimization of the MEAO cost function, bonds (MEAO pairs) identified by orbital clustering, a DMRG calculation using the MEAO basis, and a subsequent calculation of orbital-orbital mutual information. Any bonds with significant correlation is printed at the end of the script with orbital indices and correlation value.
 
 # Reference
