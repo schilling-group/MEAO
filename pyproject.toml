@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "MEAO"
+version = "1.0.0"
+description = "Maximally Entangled Atomic Orbitals (MEAO) for Bonding Analysis"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pyscf",
+    "networkx",
+    "block2",
+]
+
+[project.urls]
+Homepage = "https://github.com/schilling-group/MEAO"
+
+[tool.setuptools]
+# the repository root is the MEAO package (meao.py imports MEAO.tools)
+package-dir = { "MEAO" = "." }
+packages = ["MEAO", "MEAO.examples"]
